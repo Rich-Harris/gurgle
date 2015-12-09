@@ -1,0 +1,23 @@
+{
+  "name": "gurgle",
+  "version": "0.1.0",
+  "author": "Rich Harris",
+  "repository": "https://github.com/Rich-Harris/gurgle",
+  "license": "MIT",
+  "main": "dist/gurgle.umd.js",
+  "jsnext:main": "dist/gurgle.es6.js",
+  "files": [ "dist", "README.md" ],
+  "devDependencies": {
+    "babel-preset-es2015-rollup": "^1.0.0",
+    "eslint": "^1.10.3",
+    "mocha": "^2.3.4",
+    "rollup": "^0.21.2",
+    "rollup-plugin-babel": "^2.2.0"
+  },
+  "scripts": {
+    "build": "rollup -c -f es6 -o dist/gurgle.es6.js && rollup -c -f umd -o dist/gurgle.umd.js -n gurgle",
+    "prepublish": "npm run build",
+    "test": "mocha test/test.js",
+    "pretest": "npm run build"
+  }
+}
