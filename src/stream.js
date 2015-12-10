@@ -12,15 +12,22 @@ export default function stream () {
 	});
 
 	const s = {
+		// properties
+		closed: false,
+		done,
+		value: undefined,
+
+		// methods
 		close () {
+			if ( s.closed ) return;
+			s.closed = true;
+
 			fulfil( s.value );
 
 			subscribers.forEach( subscriber => {
 				subscriber.onclose();
 			});
 		},
-
-		done,
 
 		error ( err ) {
 			reject( err );
@@ -44,9 +51,7 @@ export default function stream () {
 
 		subscribe ( onvalue, onerror = noop, onclose = noop ) {
 			subscribers.push({ onvalue, onerror, onclose });
-		},
-
-		value: undefined
+		}
 	};
 
 	return s;

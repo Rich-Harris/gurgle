@@ -10,7 +10,32 @@ describe( 'gurgle', () => {
 	});
 
 	describe( 'operators', function () {
-		describe( 'map', function () {
+		describe( 'combineLatest', () => {
+			it( 'combines latest values', () => {
+				var a = g.stream();
+				var b = g.stream();
+
+				var combined = a.pipe( g.combineLatest, b, ( a, b ) => a + b );
+
+				a.push( 'x' );
+				b.push( 1 );
+
+				let results = [];
+				combined.subscribe( value => results.push( value ) );
+
+				b.push( 2 );
+				a.push( 'y' );
+				a.push( 'z' );
+				b.push( 3 );
+
+				a.close();
+				b.close();
+
+				assert.deepEqual( results, [ 'x2', 'y2', 'z2', 'z3' ]);
+			});
+		});
+
+		describe( 'map', () => {
 			it( 'maps a stream', function () {
 				var stream = g.stream();
 				var mapped = stream.pipe( g.map, function ( value ) {
