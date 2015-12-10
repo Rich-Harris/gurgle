@@ -26,6 +26,8 @@ describe( 'gurgle', () => {
 				stream.push( 2 );
 				stream.push( 3 );
 
+				stream.close();
+
 				assert.deepEqual( results, [ 1, 4, 9 ]);
 			});
 		});
