@@ -29,6 +29,18 @@ export default function stream () {
 			});
 		},
 
+		debug ( label = 'gurgle' ) {
+			label = `[${label}]`;
+
+			return s.subscribe( value => {
+				console.log( label, value );
+			}, err => {
+				console.error( label, err );
+			}, () => {
+				console.log( label, 'closed stream' );
+			});
+		},
+
 		error ( err ) {
 			reject( err );
 
