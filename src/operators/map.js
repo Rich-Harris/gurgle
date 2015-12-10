@@ -1,4 +1,4 @@
-import { stream } from '../gurgle.js';
+import stream from '../stream.js';
 
 export default function map ( source, fn ) {
 	const destination = stream();

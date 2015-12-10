@@ -1,4 +1,4 @@
-import { stream } from '../gurgle.js';
+import stream from '../stream.js';
 
 export default function debounce ( source, ms = 250 ) {
 	const destination = stream();

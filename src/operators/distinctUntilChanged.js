@@ -1,4 +1,4 @@
-import { stream } from '../gurgle.js';
+import stream from '../stream.js';
 
 export default function distinctUntilChanged ( source ) {
 	const destination = stream();

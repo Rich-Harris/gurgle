@@ -1,20 +1,18 @@
-import { stream } from '../gurgle.js';
+import stream from '../stream.js';
 
 export default function flatMap ( source, streamGenerator ) {
 	const destination = stream();
 
-	let token = 0;
+	let latest = 0;
 
 	source.subscribe( value => {
-		token += 1;
-		console.log( 'token', token, value )
+		latest += 1;
 
-		const t = token;
+		const token = latest;
 		const next = streamGenerator( value );
 
 		next.subscribe( value => {
-			console.log( 'value', value )
-			if ( t === token ) destination.push( value );
+			if ( token === latest ) destination.push( value );
 		});
 	}, err => {
 		destination.error( err );

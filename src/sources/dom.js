@@ -1,4 +1,4 @@
-import { stream } from '../gurgle.js';
+import stream from '../stream.js';
 
 export function fromEvent ( node, type ) {
 	const source = stream();
