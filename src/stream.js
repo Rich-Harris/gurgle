@@ -42,11 +42,14 @@ export default function stream () {
 		},
 
 		push ( value ) {
+			const previousValue = s.value;
 			s.value = value;
 
 			subscribers.forEach( subscriber => {
-				subscriber.onvalue( value );
+				subscriber.onvalue( value, previousValue );
 			});
+
+			return s;
 		},
 
 		subscribe ( onvalue, onerror = noop, onclose = noop ) {
