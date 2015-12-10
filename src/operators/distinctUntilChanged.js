@@ -10,6 +10,10 @@ export default function distinctUntilChanged ( source ) {
 		latestValue = value;
 
 		destination.push( value );
+	}, err => {
+		destination.error( err );
+	}, () => {
+		destination.close();
 	});
 
 	return destination;

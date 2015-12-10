@@ -1,30 +1,55 @@
 const noop = () => {};
 
-function Stream () {
-	this.subscribers = [];
-}
-
-Stream.prototype = {
-	pipe ( fn, ...args ) {
-		return fn( this, ...args );
-	},
-
-	push ( value ) {
-		this.value = value;
-
-		this.subscribers.forEach( ({ onvalue }) => {
-			onvalue( value );
-		});
-	},
-
-	subscribe ( onvalue, onerror = noop, oncomplete = noop ) {
-		this.subscribers.push({ onvalue, onerror, oncomplete });
-	}
-}
-
-
 export function stream () {
-	return new Stream();
+	let subscribers = [];
+
+	let fulfil;
+	let reject;
+
+	const done = new Promise( ( f, r ) => {
+		fulfil = f;
+		reject = r;
+	});
+
+	const s = {
+		close () {
+			fulfil( s.value );
+
+			subscribers.forEach( subscriber => {
+				subscriber.onclose();
+			});
+		},
+
+		done,
+
+		error ( err ) {
+			reject( err );
+
+			subscribers.forEach( subscriber => {
+				subscriber.onerror();
+			});
+		},
+
+		pipe ( fn, ...args ) {
+			return fn( s, ...args );
+		},
+
+		push ( value ) {
+			s.value = value;
+
+			subscribers.forEach( subscriber => {
+				subscriber.onvalue( value );
+			});
+		},
+
+		subscribe ( onvalue, onerror = noop, onclose = noop ) {
+			subscribers.push({ onvalue, onerror, onclose });
+		},
+
+		value: undefined
+	};
+
+	return s;
 }
 
 export { default as debounce } from './operators/debounce.js';

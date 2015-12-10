@@ -13,6 +13,10 @@ export default function debounce ( source, ms = 250 ) {
 		timeout = setTimeout( () => {
 			destination.push( latestValue );
 		}, ms );
+	}, err => {
+		destination.error( err );
+	}, () => {
+		destination.close();
 	});
 
 	return destination;
