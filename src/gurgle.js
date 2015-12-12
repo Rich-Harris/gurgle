@@ -13,3 +13,4 @@ export { default as flatMap } from './operators/flatMap.js';
 export { default as flatMapLatest } from './operators/flatMapLatest.js';
 export { default as map } from './operators/map.js';
 export { default as scan } from './operators/scan.js';
+export { default as throttle } from './operators/throttle.js';
