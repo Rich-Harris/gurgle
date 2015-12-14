@@ -7,6 +7,7 @@ export default function throttle ( source, ms = 250 ) {
 
 	source.subscribe( value => {
 		if ( blocked ) return;
+		blocked = true;
 
 		destination.push( value );
 		setTimeout( () => blocked = false, ms );
