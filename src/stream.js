@@ -1,3 +1,5 @@
+import { Promise } from './config.js';
+
 const noop = () => {};
 
 export default function stream () {
