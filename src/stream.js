@@ -56,6 +56,15 @@ export default function stream () {
 		},
 
 		push ( value ) {
+			const len = arguments.length;
+			if ( len > 1 ) {
+				for ( let i = 0; i < len; i += 1 ) {
+					s.push( arguments[i] );
+				}
+
+				return s;
+			}
+
 			const previousValue = s.value;
 			s.value = value;
 
