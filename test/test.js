@@ -2,20 +2,65 @@
 
 import * as assert from 'assert';
 import * as g from '../';
-import wait from './utils/wait.js';
 
 describe( 'gurgle', () => {
 	describe( 'sources', () => {
 		// TODO
 	});
 
-	describe( 'operators', function () {
+	describe( 'operators', () => {
+		describe( 'bufferWithCount', () => {
+			it( 'chunks input stream up into buffers of the specified size', () => {
+				const source = g.stream();
+				const dest = g.bufferWithCount( source, 3 );
+
+				let results = [];
+				dest.subscribe( value => results.push( value ) );
+
+				for ( let i = 0; i < 9; i += 1 ) {
+					source.push( i );
+				}
+
+				source.close();
+				assert.deepEqual( results, [
+					[ 0, 1, 2 ],
+					[ 3, 4, 5 ],
+					[ 6, 7, 8 ]
+				]);
+			});
+
+			it( 'chunks input stream up into buffers of the specified size and with a specified offset', () => {
+				const source = g.stream();
+				const dest = g.bufferWithCount( source, 3, 1 );
+
+				let results = [];
+				dest.subscribe( value => results.push( value ) );
+
+				for ( let i = 0; i < 9; i += 1 ) {
+					source.push( i );
+				}
+
+				source.close();
+				assert.deepEqual( results, [
+					[ 0, 1, 2 ],
+					[ 1, 2, 3 ],
+					[ 2, 3, 4 ],
+					[ 3, 4, 5 ],
+					[ 4, 5, 6 ],
+					[ 5, 6, 7 ],
+					[ 6, 7, 8 ],
+					[ 7, 8 ],
+					[ 8 ]
+				]);
+			});
+		});
+
 		describe( 'combineLatest', () => {
 			it( 'combines latest values', () => {
-				var a = g.stream();
-				var b = g.stream();
+				const a = g.stream();
+				const b = g.stream();
 
-				var combined = a.pipe( g.combineLatest, b, ( a, b ) => a + b );
+				const combined = a.pipe( g.combineLatest, b, ( a, b ) => a + b );
 
 				a.push( 'x' );
 				b.push( 1 );
@@ -24,8 +69,7 @@ describe( 'gurgle', () => {
 				combined.subscribe( value => results.push( value ) );
 
 				b.push( 2 );
-				a.push( 'y' );
-				a.push( 'z' );
+				a.push( 'y', 'z' );
 				b.push( 3 );
 
 				a.close();
@@ -35,25 +79,78 @@ describe( 'gurgle', () => {
 			});
 		});
 
-		describe( 'map', () => {
-			it( 'maps a stream', function () {
-				var stream = g.stream();
-				var mapped = stream.pipe( g.map, function ( value ) {
-					return value * value;
+		describe( 'debounce', () => {
+			it( 'waits until specified period of inactivity', () => {
+				const source = g.stream();
+				const dest = g.debounce( source, 1 );
+
+				let results = [];
+				dest.subscribe( value => results.push( value ) );
+
+				source.push( 'a', 'b', 'c' ).close();
+
+				dest.done.then( () => {
+					assert.deepEqual( results, [ 'c' ]);
+				});
+			});
+		});
+
+		describe( 'distinctUntilChanged', () => {
+			it( 'ignores values that are identical to the previous one', () => {
+				const source = g.stream();
+				const dest = g.distinctUntilChanged( source );
+
+				let results = [];
+				dest.subscribe( value => results.push( value ) );
+
+				source.push( 1, 2, 3, 3, 2, 3, 2, 2, 1, 1, 1, 4 ).close();
+
+				assert.deepEqual( results, [ 1, 2, 3, 2, 3, 2, 1, 4 ]);
+			});
+		});
+
+		describe( 'filter', () => {
+			it( 'filters out values', () => {
+				const source = g.stream();
+				const dest = g.filter( source, x => x % 2 );
+
+				let results = [];
+				dest.subscribe( value => results.push( value ) );
+
+				source.push( 1, 2, 3, 4, 5, 6, 7, 8, 9 ).close();
+
+				assert.deepEqual( results, [ 1, 3, 5, 7, 9 ]);
+			});
+		});
+
+		describe( 'flatMap', () => {
+			it( 'flattens a stream of streams into a single stream', () => {
+				const input = g.stream();
+
+				let temp = [];
+				const output = g.flatMap( input, value => {
+					const stream = g.stream();
+					temp.push({ stream, value });
+
+					return stream;
 				});
 
-				var results = [];
-				mapped.subscribe( function ( value ) {
-					results.push( value );
+				let results = [];
+				output.subscribe( value => results.push( value ) );
+
+				input.push( 'a' );
+				temp[0].stream.push( temp[0].value.toUpperCase() );
+
+				input.push( 'b' );
+				input.push( 'c' );
+				temp[2].stream.push( temp[2].value.toUpperCase() ); // out of order
+				temp[1].stream.push( temp[1].value.toUpperCase() );
+
+				input.close();
+
+				return output.done.then( () => {
+					assert.deepEqual( results, [ 'A', 'C', 'B' ] );
 				});
-
-				stream.push( 1 );
-				stream.push( 2 );
-				stream.push( 3 );
-
-				stream.close();
-
-				assert.deepEqual( results, [ 1, 4, 9 ]);
 			});
 		});
 
@@ -87,7 +184,23 @@ describe( 'gurgle', () => {
 				});
 			});
 		});
+
+		describe( 'map', () => {
+			it( 'maps a stream', () => {
+				const stream = g.stream();
+				const mapped = stream.pipe( g.map, x => x * x );
+
+				let results = [];
+				mapped.subscribe( value => results.push( value ) );
+
+				stream.push( 1 );
+				stream.push( 2 );
+				stream.push( 3 );
+
+				stream.close();
+
+				assert.deepEqual( results, [ 1, 4, 9 ]);
+			});
+		});
 	});
-
-
 });
