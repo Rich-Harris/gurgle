@@ -9,6 +9,7 @@ export default function flatMap ( source, streamGenerator ) {
 	}, err => {
 		destination.error( err );
 	}, () => {
+		// TODO should this stay open until all generated streams have closed? presumably
 		destination.close();
 	});
 
