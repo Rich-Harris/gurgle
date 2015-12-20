@@ -1,11 +1,8 @@
 import stream from '../stream.js';
+import isClosed from '../helpers/isClosed.js';
 
 function getValue ( stream ) {
 	return stream.value;
-}
-
-function isClosed ( stream ) {
-	return stream.closed;
 }
 
 export default function combineLatest () {
