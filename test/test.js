@@ -202,5 +202,82 @@ describe( 'gurgle', () => {
 				assert.deepEqual( results, [ 1, 4, 9 ]);
 			});
 		});
+
+		describe( 'merge', () => {
+			it( 'merges streams', () => {
+				const a = g.stream();
+				const b = g.stream();
+
+				const merged = g.merge( a, b );
+
+				a.push( 1 );
+				assert.equal( merged.value, 1 );
+
+				b.push( 2 );
+				assert.equal( merged.value, 2 );
+
+				a.push( 3 );
+				assert.equal( merged.value, 3 );
+
+				a.close();
+				b.close();
+			});
+
+			it( 'closes the merged stream when all inputs are closed', () => {
+				const a = g.stream();
+				const b = g.stream();
+
+				const merged = g.merge( a, b );
+				assert.ok( !merged.closed );
+
+				a.close();
+				assert.ok( !merged.closed );
+
+				b.close();
+				assert.ok( merged.closed );
+			});
+		});
+
+		describe( 'scan', () => {
+			it( 'accumulates values', () => {
+				const input = g.stream();
+				const output = input.pipe( g.scan, ( prev, next ) => prev + next, 0 );
+
+				assert.equal( output.value, 0 );
+
+				input.push( 1 );
+				assert.equal( output.value, 1 );
+
+				input.push( 2 );
+				assert.equal( output.value, 3 );
+
+				input.push( 3 );
+				assert.equal( output.value, 6 );
+
+				input.close();
+			});
+		});
+
+		describe( 'throttle', () => {
+			it( 'throttles a stream', () => {
+				const input = g.stream();
+				const output = g.throttle( input, 10 );
+
+				input.push( 1 );
+				input.push( 2 );
+				input.push( 3 );
+				assert.equal( output.value, 1 );
+
+				setTimeout( () => {
+					assert.equal( output.value, 1 );
+					input.push( 4 );
+					assert.equal( output.value, 4 );
+
+					input.close();
+				}, 20 );
+
+				return output.done;
+			});
+		});
 	});
 });
