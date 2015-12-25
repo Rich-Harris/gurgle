@@ -1,8 +1,8 @@
 export { default as stream } from './stream.js';
 
 // sources
-export { fromEvent } from './sources/dom.js';
-export { default as fromPromise } from './sources/promise.js';
+export { default as fromEvent } from './sources/fromEvent.js';
+export { default as fromPromise } from './sources/fromPromise.js';
 
 // operators
 export { default as bufferWithCount } from './operators/bufferWithCount.js';
