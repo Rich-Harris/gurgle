@@ -4,8 +4,175 @@ import * as assert from 'assert';
 import * as g from '../';
 
 describe( 'gurgle', () => {
+	describe( 'stream', () => {
+		it( 'calls a callback on close', () => {
+			let closed = false;
+			const stream = g.stream( () => closed = true );
+			stream.close();
+			assert.ok( closed );
+		});
+
+		describe( 'push', () => {
+			it( 'updates stream.value', () => {
+				const stream = g.stream();
+
+				stream.push( 'a' );
+				assert.equal( stream.value, 'a' );
+				stream.close();
+			});
+
+			it( 'is chainable', () => {
+				const stream = g.stream();
+
+				stream.push( 'a' ).push( 'b' );
+				assert.equal( stream.value, 'b' );
+				stream.close();
+			});
+		});
+
+		describe( 'close', () => {
+			it( 'closes a stream', () => {
+				const stream = g.stream();
+
+				assert.ok( !stream.closed );
+				stream.close();
+				assert.ok( stream.closed );
+
+				assert.throws( function () {
+					stream.push( 'x' );
+				}, /Cannot push to a closed stream/ );
+			});
+		});
+
+		describe( 'subscribe', () => {
+			it( 'subscribes to a stream', () => {
+				const stream = g.stream();
+
+				let value, error, closed;
+
+				stream.subscribe(
+					v => value = v,
+					e => error = e,
+					() => closed = true
+				);
+
+				stream.push( 42 );
+				stream.error( new Error( 'oh noes!' ) );
+				stream.close();
+
+				assert.equal( value, 42 );
+				assert.equal( error.message, 'oh noes!' );
+				assert.ok( closed );
+			});
+
+			it( 'returns an object with a `cancel` method', () => {
+				const stream = g.stream();
+
+				let value, error, closed;
+
+				const subscriber = stream.subscribe(
+					v => value = v,
+					e => error = e,
+					() => closed = true
+				);
+
+				stream.push( 42 );
+				stream.error( new Error( 'oh noes!' ) );
+
+				subscriber.cancel();
+
+				stream.push( 99 );
+				stream.error( new Error( 'nope' ) );
+				stream.close();
+
+				assert.equal( value, 42 );
+				assert.equal( error.message, 'oh noes!' );
+				assert.ok( !closed );
+			});
+		});
+	});
+
 	describe( 'sources', () => {
-		// TODO
+		describe( 'fromEvent', () => {
+			it( 'creates a stream of DOM events', () => {
+				const fakeDomNode = {
+					listeners: {},
+					addEventListener: ( type, listener ) => {
+						( fakeDomNode.listeners[ type ] || ( fakeDomNode.listeners[ type ] = [] ) ).push( listener );
+					},
+					removeEventListener: ( type, listener ) => {
+						const group = fakeDomNode.listeners[ type ];
+						if ( !group ) return;
+						const index = group.indexOf( listener );
+						if ( ~index ) group.splice( index, 1 );
+					},
+					trigger: ( type, event ) => {
+						const group = fakeDomNode.listeners[ type ];
+						if ( !group ) return;
+						group.forEach( fn => fn( event ) );
+					}
+				};
+
+				const stream = g.fromEvent( fakeDomNode, 'mousemove' );
+				stream.subscribe( event => {
+					assert.equal( event.type, 'mousemove' );
+					assert.equal( event.clientX, 1 );
+				});
+
+				fakeDomNode.trigger( 'mousemove', { type: 'mousemove', clientX: 1 });
+				stream.close();
+				fakeDomNode.trigger( 'mousemove', { type: 'mousemove', clientX: 2 });
+				assert.equal( fakeDomNode.listeners.mousemove.length, 0 );
+			});
+		});
+
+		describe( 'fromPromise', () => {
+			it( 'creates a stream from a promise', () => {
+				let fulfil;
+				const promise = new Promise( f => fulfil = f );
+				const stream = g.fromPromise( promise );
+
+				let value;
+				stream.subscribe( v => value = v );
+
+				fulfil( 42 );
+
+				return stream.done.then( () => {
+					assert.equal( value, 42 );
+				});
+			});
+
+			it( 'handles rejections', () => {
+				let reject;
+				const promise = new Promise( ( f, r ) => reject = r );
+				const stream = g.fromPromise( promise );
+
+				let err;
+				stream.subscribe( () => {}, e => err = e );
+
+				reject( new Error( 'something went wrong' ) );
+
+				return stream.done.then( () => {
+					assert.equal( err.message, 'something went wrong' );
+				});
+			});
+
+			it( 'ignores resolutions after the stream is closed', () => {
+				let fulfil;
+				const promise = new Promise( f => fulfil = f );
+				const stream = g.fromPromise( promise );
+
+				let value;
+				stream.subscribe( v => value = v );
+
+				stream.close();
+				fulfil( 42 );
+
+				return promise.then( () => {
+					assert.equal( value, undefined );
+				});
+			});
+		});
 	});
 
 	describe( 'operators', () => {
@@ -69,7 +236,7 @@ describe( 'gurgle', () => {
 				combined.subscribe( value => results.push( value ) );
 
 				b.push( 2 );
-				a.push( 'y', 'z' );
+				a.push( 'y' ).push( 'z' );
 				b.push( 3 );
 
 				a.close();
@@ -87,7 +254,7 @@ describe( 'gurgle', () => {
 				let results = [];
 				dest.subscribe( value => results.push( value ) );
 
-				source.push( 'a', 'b', 'c' ).close();
+				source.push( 'a' ).push( 'b' ).push( 'c' ).close();
 
 				dest.done.then( () => {
 					assert.deepEqual( results, [ 'c' ]);
@@ -103,7 +270,20 @@ describe( 'gurgle', () => {
 				let results = [];
 				dest.subscribe( value => results.push( value ) );
 
-				source.push( 1, 2, 3, 3, 2, 3, 2, 2, 1, 1, 1, 4 ).close();
+				source
+					.push( 1 )
+					.push( 2 )
+					.push( 3 )
+					.push( 3 )
+					.push( 2 )
+					.push( 3 )
+					.push( 2 )
+					.push( 2 )
+					.push( 1 )
+					.push( 1 )
+					.push( 1 )
+					.push( 4 )
+					.close();
 
 				assert.deepEqual( results, [ 1, 2, 3, 2, 3, 2, 1, 4 ]);
 			});
@@ -117,7 +297,17 @@ describe( 'gurgle', () => {
 				let results = [];
 				dest.subscribe( value => results.push( value ) );
 
-				source.push( 1, 2, 3, 4, 5, 6, 7, 8, 9 ).close();
+				source
+					.push( 1 )
+					.push( 2 )
+					.push( 3 )
+					.push( 4 )
+					.push( 5 )
+					.push( 6 )
+					.push( 7 )
+					.push( 8 )
+					.push( 9 )
+					.close();
 
 				assert.deepEqual( results, [ 1, 3, 5, 7, 9 ]);
 			});
