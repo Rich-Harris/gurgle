@@ -5,20 +5,20 @@ export default function flatMap ( source, streamGenerator ) {
 
 	let latest = 0;
 
-	source.subscribe( value => {
-		latest += 1;
+	source.subscribe(
+		value => {
+			latest += 1;
 
-		const token = latest;
-		const next = streamGenerator( value );
+			const token = latest;
+			const next = streamGenerator( value );
 
-		next.subscribe( value => {
-			if ( token === latest ) destination.push( value );
-		});
-	}, err => {
-		destination.error( err );
-	}, () => {
-		destination.close();
-	});
+			next.subscribe( value => {
+				if ( token === latest ) destination.push( value );
+			});
+		},
+		destination.error,
+		destination.close
+	);
 
 	return destination;
 }

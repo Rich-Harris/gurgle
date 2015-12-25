@@ -5,16 +5,16 @@ export default function distinctUntilChanged ( source ) {
 
 	let latestValue;
 
-	source.subscribe( value => {
-		if ( value === latestValue ) return;
-		latestValue = value;
+	source.subscribe(
+		value => {
+			if ( value === latestValue ) return;
+			latestValue = value;
 
-		destination.push( value );
-	}, err => {
-		destination.error( err );
-	}, () => {
-		destination.close();
-	});
+			destination.push( value );
+		},
+		destination.error,
+		destination.close
+	);
 
 	return destination;
 }

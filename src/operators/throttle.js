@@ -5,17 +5,17 @@ export default function throttle ( source, ms = 250 ) {
 
 	let blocked = false;
 
-	source.subscribe( value => {
-		if ( blocked ) return;
-		blocked = true;
+	source.subscribe(
+		value => {
+			if ( blocked ) return;
+			blocked = true;
 
-		destination.push( value );
-		setTimeout( () => blocked = false, ms );
-	}, err => {
-		destination.error( err );
-	}, () => {
-		destination.close();
-	});
+			destination.push( value );
+			setTimeout( () => blocked = false, ms );
+		},
+		destination.error,
+		destination.close
+	);
 
 	return destination;
 }

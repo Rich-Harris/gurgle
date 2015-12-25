@@ -5,14 +5,14 @@ export default function scan ( source, fn, acc ) {
 
 	destination.push( acc );
 
-	source.subscribe( value => {
-		acc = fn( destination.value, value );
-		destination.push( acc );
-	}, err => {
-		destination.error( err );
-	}, () => {
-		destination.close();
-	});
+	source.subscribe(
+		value => {
+			acc = fn( destination.value, value );
+			destination.push( acc );
+		},
+		destination.error,
+		destination.close
+	);
 
 	return destination;
 }
