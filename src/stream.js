@@ -2,16 +2,13 @@ import { Promise } from './config.js';
 
 const noop = () => {};
 
-export default function stream () {
+export default function stream ( onclose = noop ) {
 	let subscribers = [];
 
+	// `stream.done` resolves once the stream is closed.
+	// Handy for testing etc
 	let fulfil;
-	let reject;
-
-	const done = new Promise( ( f, r ) => {
-		fulfil = f;
-		reject = r;
-	});
+	const done = new Promise( f => fulfil = f );
 
 	const s = {
 		// properties
@@ -22,13 +19,22 @@ export default function stream () {
 		// methods
 		close () {
 			if ( s.closed ) return;
-			s.closed = true;
+
+			onclose();
+
+			Object.defineProperty( s, 'closed', {
+				value: true,
+				writable: false,
+				enumerable: true
+			});
 
 			fulfil( s.value );
 
 			subscribers.forEach( subscriber => {
 				subscriber.onclose();
 			});
+
+			subscribers = null;
 		},
 
 		debug ( label = 'gurgle' ) {
@@ -44,10 +50,8 @@ export default function stream () {
 		},
 
 		error ( err ) {
-			reject( err );
-
 			subscribers.forEach( subscriber => {
-				subscriber.onerror();
+				subscriber.onerror( err );
 			});
 		},
 
@@ -56,14 +60,7 @@ export default function stream () {
 		},
 
 		push ( value ) {
-			const len = arguments.length;
-			if ( len > 1 ) {
-				for ( let i = 0; i < len; i += 1 ) {
-					s.push( arguments[i] );
-				}
-
-				return s;
-			}
+			if ( s.closed ) throw new Error( 'Cannot push to a closed stream' );
 
 			const previousValue = s.value;
 			s.value = value;
@@ -76,7 +73,21 @@ export default function stream () {
 		},
 
 		subscribe ( onvalue, onerror = noop, onclose = noop ) {
-			subscribers.push({ onvalue, onerror, onclose });
+			if ( s.closed ) throw new Error( 'Cannot subscribe to a closed stream' );
+
+			const callbacks = { onvalue, onerror, onclose };
+			subscribers.push( callbacks );
+
+			let cancelled = false;
+
+			return {
+				cancel () {
+					if ( !cancelled ) {
+						cancelled = true;
+						if ( !s.closed ) subscribers.splice( subscribers.indexOf( callbacks ), 1 );
+					}
+				}
+			};
 		}
 	};
 
