@@ -20,9 +20,11 @@
     "rollup-plugin-babel": "^2.2.0"
   },
   "scripts": {
-    "build": "rollup -c -f es6 -o dist/gurgle.es6.js && rollup -c -f umd -o dist/gurgle.umd.js -n gurgle",
-    "prepublish": "npm run build",
+    "build": "npm run build:es6 && npm run build:umd",
+    "build:es6": "rollup -c -f es6 -o dist/gurgle.es6.js",
+    "build:umd": "rollup -c -f umd -o dist/gurgle.umd.js -n gurgle",
+    "prepublish": "npm run test && npm run build:umd",
     "test": "mocha test/test.js --compilers js:babel-register",
-    "pretest": "npm run build"
+    "pretest": "npm run build:umd"
   }
 }
