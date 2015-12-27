@@ -16,7 +16,17 @@ So I did the only sensible thing and wrote my own library, with the following go
 * **easy** – ideological purity may be sacrificed in the name of getting stuff done
 * **familiar** – operators are modelled after their RxJS counterparts. If you're familiar with `flatMapLatest` and `distinctUntilChanged` and friends, you'll know exactly what is going on
 
-If you, like me, want to use streams in your app but can't afford to take several frustrating weeks to rewire your brain, or you need to introduce streams into an existing codebase gradually, Gurgle is for you. If you're the kind of programmer that enjoys ideological bunfights, it's probably not.
+### You should use Gurgle if...
+
+* You want to dabble with streams but can't afford to take several frustrating weeks to rewire your brain
+* You want to introduce streams into an existing codebase gradually
+* You don't want to add a hefty dependency to your app
+
+### You shouldn't use Gurgle if...
+
+* You need the full functionality of RxJS (right now, Gurgle is missing lots of operators and sources. You should contribute!)
+* Your app is extremely performance-sensitive (RxJS has been battle-tested at places like Netflix, whereas this... well, I wrote it in a couple of afternoons. It doesn't (yet) have concepts like schedulers and backpressure)
+* You enjoy ideological bunfights about the true nature of FRP and suchlike
 
 
 ## Installation
