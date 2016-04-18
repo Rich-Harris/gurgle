@@ -1,7 +1,7 @@
 /* global require, describe, it */
 
-import * as assert from 'assert';
-import * as g from '../';
+const assert = require( 'assert' );
+const g = require( '../' );
 
 describe( 'gurgle', () => {
 	describe( 'stream', () => {
