@@ -5,7 +5,7 @@
   "repository": "https://github.com/Rich-Harris/gurgle",
   "license": "MIT",
   "main": "dist/gurgle.umd.js",
-  "jsnext:main": "dist/gurgle.es6.js",
+  "jsnext:main": "dist/gurgle.es.js",
   "files": [
     "dist",
     "README.md"
@@ -18,10 +18,10 @@
     "rollup-plugin-buble": "^0.5.0"
   },
   "scripts": {
-    "build": "npm run build:es6 && npm run build:umd",
-    "build:es6": "rollup -c -f es6 -o dist/gurgle.es6.js",
+    "build": "npm run build:es && npm run build:umd",
+    "build:es": "rollup -c -f es6 -o dist/gurgle.es.js",
     "build:umd": "rollup -c -f umd -o dist/gurgle.umd.js -n gurgle",
-    "prepublish": "npm run test && npm run build:umd",
+    "prepublish": "npm run test && npm run build:es",
     "test": "mocha test/test.js --compilers js:buble/register",
     "pretest": "npm run build:umd"
   }
