@@ -11,6 +11,8 @@ export default function stream ( onclose = noop ) {
 	const done = new Promise( f => fulfil = f );
 
 	const s = {
+		__gurgle: true,
+
 		// properties
 		closed: false,
 		done,
@@ -41,11 +43,11 @@ export default function stream ( onclose = noop ) {
 			label = `[${label}]`;
 
 			return s.subscribe( value => {
-				console.log( label, value );
+				console.log( label, value ); // eslint-disable-line no-console
 			}, err => {
-				console.error( label, err );
+				console.error( label, err ); // eslint-disable-line no-console
 			}, () => {
-				console.log( label, 'closed stream' );
+				console.log( label, 'closed stream' ); // eslint-disable-line no-console
 			});
 		},
 

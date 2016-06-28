@@ -3,6 +3,12 @@
 const assert = require( 'assert' );
 const g = require( '../' );
 
+// fake requestAnimationFrame for node
+let time = 1;
+global.requestAnimationFrame = function ( cb ) {
+	process.nextTick( () => cb( time++ ) );
+};
+
 describe( 'gurgle', () => {
 	describe( 'stream', () => {
 		it( 'calls a callback on close', () => {
@@ -171,6 +177,27 @@ describe( 'gurgle', () => {
 				return promise.then( () => {
 					assert.equal( value, undefined );
 				});
+			});
+		});
+
+		describe( 'requestAnimationFrame', () => {
+			const stream = g.requestAnimationFrame();
+
+			assert.equal( stream.value, null );
+
+			let values = [];
+			stream.subscribe( value => {
+				values.push( value );
+				if ( values.length >= 3 ) stream.close();
+			});
+
+			return stream.done.then( () => {
+				assert.equal( values.length, 3 );
+				assert.ok( typeof values[0] === 'number' );
+				assert.ok( typeof values[1] === 'number' );
+				assert.ok( typeof values[2] === 'number' );
+				assert.ok( values[2] > values[1] );
+				assert.ok( values[1] > values[0] );
 			});
 		});
 	});
@@ -425,6 +452,25 @@ describe( 'gurgle', () => {
 
 				b.close();
 				assert.ok( merged.closed );
+			});
+		});
+
+		describe( 'pairwise', () => {
+			it( 'combines sequential values into a sequence of arrays', () => {
+				const a = g.stream();
+
+				const pairwise = g.pairwise( a );
+
+				assert.equal( pairwise.value, null );
+				a.push( 'a' );
+				assert.equal( pairwise.value, null );
+				a.push( 'b' );
+				assert.deepEqual( pairwise.value, [ 'a', 'b' ] );
+				a.push( 'c' );
+				assert.deepEqual( pairwise.value, [ 'b', 'c' ] );
+
+				a.close();
+				assert.ok( pairwise.closed );
 			});
 		});
 

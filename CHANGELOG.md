@@ -1,5 +1,9 @@
 # gurgle changelog
 
+## 0.1.5
+
+* Add `fromGeolocation`
+
 ## 0.1.1-4
 
 * various
