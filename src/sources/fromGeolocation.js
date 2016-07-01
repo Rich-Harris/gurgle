@@ -21,10 +21,17 @@ export default function fromGeolocation ( options = {} ) {
 			setTimeout( check, interval );
 		};
 
+		const error = error => {
+			stream.error( error );
+			setTimeout( check, interval );
+		};
+
 		const check = () => {
 			if ( closed ) return;
-			navigator.geolocation.getCurrentPosition( success, source.error, options );
+			navigator.geolocation.getCurrentPosition( success, error, options );
 		};
+
+		check();
 	} else {
 		watchId = navigator.geolocation.watchPosition( source.push, source.error, options );
 	}

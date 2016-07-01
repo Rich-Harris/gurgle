@@ -1,5 +1,9 @@
 # gurgle changelog
 
+## 0.1.7
+
+* Oops
+
 ## 0.1.6
 
 * Add `interval` option to `fromGeolocation`
