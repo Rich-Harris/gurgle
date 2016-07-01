@@ -17,12 +17,12 @@ export default function fromGeolocation ( options = {} ) {
 		const success = position => {
 			if ( closed ) return;
 
-			stream.push( position );
+			source.push( position );
 			setTimeout( check, interval );
 		};
 
 		const error = error => {
-			stream.error( error );
+			source.error( error );
 			setTimeout( check, interval );
 		};
 
