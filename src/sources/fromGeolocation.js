@@ -14,26 +14,38 @@ export default function fromGeolocation ( options = {} ) {
 	});
 
 	if ( interval ) {
-		const success = position => {
+		const onsuccess = position => {
 			if ( closed ) return;
 
 			source.push( position );
 			setTimeout( check, interval );
 		};
 
-		const error = error => {
-			source.error( error );
-			setTimeout( check, interval );
+		const onerror = error => {
+			if ( options.onerror ) {
+				options.onerror( error );
+				setTimeout( check, interval );
+			} else {
+				source.error( error );
+			}
 		};
 
 		const check = () => {
 			if ( closed ) return;
-			navigator.geolocation.getCurrentPosition( success, error, options );
+			navigator.geolocation.getCurrentPosition( onsuccess, onerror, options );
 		};
 
 		check();
 	} else {
-		watchId = navigator.geolocation.watchPosition( source.push, source.error, options );
+		const onerror = error => {
+			if ( options.onerror ) {
+				options.onerror( error );
+			} else {
+				source.error( error );
+			}
+		};
+
+		watchId = navigator.geolocation.watchPosition( source.push, onerror, options );
 	}
 
 	return source;
