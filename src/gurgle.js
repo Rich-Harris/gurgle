@@ -1,6 +1,7 @@
 export { default as stream } from './stream.js';
 
 // sources
+export { default as fromAjax } from './sources/fromAjax.js';
 export { default as fromEvent } from './sources/fromEvent.js';
 export { default as fromGeolocation } from './sources/fromGeolocation.js';
 export { default as fromPromise } from './sources/fromPromise.js';
