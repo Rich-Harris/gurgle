@@ -3,6 +3,8 @@
 const assert = require( 'assert' );
 const g = require( '../' );
 
+require( 'source-map-support' ).install();
+
 // fake requestAnimationFrame for node
 let time = 1;
 global.requestAnimationFrame = function ( cb ) {
@@ -171,8 +173,7 @@ describe( 'gurgle', () => {
 				const promise = new Promise( ( f, r ) => reject = r );
 				const stream = g.fromPromise( promise );
 
-				let err;
-				stream.subscribe( () => {}, e => err = e );
+				stream.subscribe( () => {}, () => {} );
 
 				reject( new Error( 'something went wrong' ) );
 
@@ -385,6 +386,45 @@ describe( 'gurgle', () => {
 
 				return output.done.then( () => {
 					assert.deepEqual( results, [ 'A', 'C', 'B' ] );
+				});
+			});
+
+			it( 'disregards values from child streams after source stream has closed', () => {
+				const input = g.stream();
+
+				let temp = [];
+				const output = g.flatMap( input, value => {
+					let closed = false;
+					const stream = g.stream( () => {
+						closed = true;
+					});
+
+					temp.push({
+						push ( value ) {
+							if ( !closed ) stream.push( value );
+						},
+						value
+					});
+
+					return stream;
+				});
+
+				let results = [];
+				output.subscribe( value => results.push( value ) );
+
+				input.push( 'a' );
+				input.push( 'b' );
+				input.push( 'c' );
+
+				temp[0].push( temp[0].value.toUpperCase() );
+
+				input.close();
+
+				temp[1].push( temp[1].value.toUpperCase() );
+				temp[2].push( temp[2].value.toUpperCase() );
+
+				return output.done.then( () => {
+					assert.deepEqual( results, [ 'A' ] );
 				});
 			});
 		});
