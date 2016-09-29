@@ -7,5 +7,6 @@ export default {
 	targets: [
 		{ format: 'es', dest: 'dist/gurgle.es.js' },
 		{ format: 'umd', dest: 'dist/gurgle.umd.js' }
-	]
+	],
+	sourceMap: true
 };

@@ -3,6 +3,8 @@
 const assert = require( 'assert' );
 const g = require( '../' );
 
+require( 'source-map-support' ).install();
+
 // fake requestAnimationFrame for node
 let time = 1;
 global.requestAnimationFrame = function ( cb ) {
@@ -74,26 +76,44 @@ describe( 'gurgle', () => {
 			it( 'returns an object with a `cancel` method', () => {
 				const stream = g.stream();
 
-				let value, error, closed;
+				let value, closed;
 
 				const subscriber = stream.subscribe(
 					v => value = v,
-					e => error = e,
+					() => {},
 					() => closed = true
 				);
 
 				stream.push( 42 );
-				stream.error( new Error( 'oh noes!' ) );
 
 				subscriber.cancel();
 
 				stream.push( 99 );
-				stream.error( new Error( 'nope' ) );
 				stream.close();
 
 				assert.equal( value, 42 );
-				assert.equal( error.message, 'oh noes!' );
 				assert.ok( !closed );
+			});
+		});
+
+		describe( 'error', () => {
+			it( 'closes a stream', () => {
+				const stream = g.stream();
+
+				let error = null;
+				let closed = false;
+
+				stream.subscribe(
+					() => {},
+					e => error = e,
+					() => closed = true
+				);
+
+				stream.error( new Error( 'womp womp' ) );
+
+				assert.equal( error.message, 'womp womp' );
+				assert.ok( closed );
+				assert.ok( stream.closed );
 			});
 		});
 	});
@@ -153,12 +173,11 @@ describe( 'gurgle', () => {
 				const promise = new Promise( ( f, r ) => reject = r );
 				const stream = g.fromPromise( promise );
 
-				let err;
-				stream.subscribe( () => {}, e => err = e );
+				stream.subscribe( () => {}, () => {} );
 
 				reject( new Error( 'something went wrong' ) );
 
-				return stream.done.then( () => {
+				return stream.done.catch( err => {
 					assert.equal( err.message, 'something went wrong' );
 				});
 			});
@@ -367,6 +386,45 @@ describe( 'gurgle', () => {
 
 				return output.done.then( () => {
 					assert.deepEqual( results, [ 'A', 'C', 'B' ] );
+				});
+			});
+
+			it( 'disregards values from child streams after source stream has closed', () => {
+				const input = g.stream();
+
+				let temp = [];
+				const output = g.flatMap( input, value => {
+					let closed = false;
+					const stream = g.stream( () => {
+						closed = true;
+					});
+
+					temp.push({
+						push ( value ) {
+							if ( !closed ) stream.push( value );
+						},
+						value
+					});
+
+					return stream;
+				});
+
+				let results = [];
+				output.subscribe( value => results.push( value ) );
+
+				input.push( 'a' );
+				input.push( 'b' );
+				input.push( 'c' );
+
+				temp[0].push( temp[0].value.toUpperCase() );
+
+				input.close();
+
+				temp[1].push( temp[1].value.toUpperCase() );
+				temp[2].push( temp[2].value.toUpperCase() );
+
+				return output.done.then( () => {
+					assert.deepEqual( results, [ 'A' ] );
 				});
 			});
 		});
