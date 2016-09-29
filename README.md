@@ -69,18 +69,18 @@ stream.push( 'a' );
 stream.value; // 'a' – the most recently pushed value
 
 // the second and third arguments to `stream.subscribe`
-// are optional
+// are optional. If a value has been pushed to the stream
+// the stream is considered to have 'started', and the
+// callback will be called with the current stream value
 stream.subscribe(
 	value => console.log( `the value is ${value}` ),
 	error => console.log( `oh noes! ${error.message}` ),
 	() => console.log( `closing the stream` )
 );
+// -> 'the value is a'
 
 stream.push( 'b' );
 // -> 'the value is b'
-
-stream.error( new Error( 'something went wrong' ) );
-// -> 'oh noes! something went wrong'
 
 stream.push( 'c' ).push( 'd' ).close();
 // -> 'the value is c'
@@ -92,11 +92,37 @@ stream.push( 'c' ).push( 'd' ).close();
 Once a stream is closed, you cannot push more values to it, and the subscriber functions will no longer be called.
 
 
-### Stream sources
+### Error handling
 
-Gurgle provides convenient ways to ways common streams:
+Calling `stream.error(...)` will cause any error handlers to be invoked, **and will close the stream**:
 
 ```js
+const anotherStream = g.stream( () => {
+	console.log( 'cleaning up' );
+});
+
+anotherStream.subscribe(
+	value => console.log( `the value is ${value}` ),
+	error => console.log( `oh noes! ${error.message}` ),
+	() => console.log( `closing the stream` )
+);
+
+anotherStream.error( new Error( 'something went wrong' ) );
+// -> 'oh noes! something went wrong'
+// -> 'closing the stream'
+```
+
+
+### Stream sources
+
+Gurgle provides convenient ways to create common streams:
+
+```js
+// fromAjax – accepts a URL and an options object. Self-closing
+const ajaxStream = g.fromAjax( 'http://example.com/data.json', {
+	responseType: 'json'
+});
+
 // fromEvent – accepts a DOM node (or `window`) and
 // an event type. Removes event listener when stream
 // is closed
@@ -104,7 +130,20 @@ const eventStream = g.fromEvent( window, 'mousemove' );
 
 // fromPromise – creates a stream from a Promise, which
 // auto-closes once the promise resolves
-const promiseStream = g.fromPromise( ajax( 'http://example.com' ) );
+const promiseStream = g.fromPromise( doSomethingAsync() );
+
+// fromGeolocation – watches user's location at a specified interval
+// or using watchPosition
+const geolocationStream = g.fromGeolocation({
+	interval: 10 * 1e3,
+	onerror ( err ) {
+		// without this, geolocation errors will close the stream
+	}
+});
+
+// requestAnimationFrame – creates a stream that updates every frame
+// with a tick value
+const frame = g.requestAnimationFrame();
 
 // more to come...
 ```
