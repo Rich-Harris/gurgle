@@ -275,20 +275,23 @@ describe( 'gurgle', () => {
 
 				const combined = a.pipe( g.combineLatest, b, ( a, b ) => a + b );
 
-				a.push( 'x' );
+				a.push( 'w' );
 				b.push( 1 );
+
+				a.push( 'x' );
+				b.push( 2 );
 
 				let results = [];
 				combined.subscribe( value => results.push( value ) );
 
-				b.push( 2 );
-				a.push( 'y' ).push( 'z' );
 				b.push( 3 );
+				a.push( 'y' ).push( 'z' );
+				b.push( 4 );
 
 				a.close();
 				b.close();
 
-				assert.deepEqual( results, [ 'x2', 'y2', 'z2', 'z3' ]);
+				assert.deepEqual( results, [ 'x2', 'x3', 'y3', 'z3', 'z4' ]);
 			});
 		});
 

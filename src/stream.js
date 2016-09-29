@@ -24,6 +24,7 @@ export default function stream ( onclose = noop ) {
 		// properties
 		closed: false,
 		done,
+		started: false,
 		value: undefined,
 
 		// methods
@@ -92,6 +93,8 @@ export default function stream ( onclose = noop ) {
 				subscriber.onvalue( value, previousValue );
 			});
 
+			s.started = true;
+
 			return s;
 		},
 
@@ -100,6 +103,8 @@ export default function stream ( onclose = noop ) {
 
 			const callbacks = { onvalue, onerror, onclose };
 			subscribers.push( callbacks );
+
+			if ( s.started ) onvalue( s.value );
 
 			let cancelled = false;
 
