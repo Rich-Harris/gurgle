@@ -74,26 +74,44 @@ describe( 'gurgle', () => {
 			it( 'returns an object with a `cancel` method', () => {
 				const stream = g.stream();
 
-				let value, error, closed;
+				let value, closed;
 
 				const subscriber = stream.subscribe(
 					v => value = v,
-					e => error = e,
+					() => {},
 					() => closed = true
 				);
 
 				stream.push( 42 );
-				stream.error( new Error( 'oh noes!' ) );
 
 				subscriber.cancel();
 
 				stream.push( 99 );
-				stream.error( new Error( 'nope' ) );
 				stream.close();
 
 				assert.equal( value, 42 );
-				assert.equal( error.message, 'oh noes!' );
 				assert.ok( !closed );
+			});
+		});
+
+		describe( 'error', () => {
+			it( 'closes a stream', () => {
+				const stream = g.stream();
+
+				let error = null;
+				let closed = false;
+
+				stream.subscribe(
+					() => {},
+					e => error = e,
+					() => closed = true
+				);
+
+				stream.error( new Error( 'womp womp' ) );
+
+				assert.equal( error.message, 'womp womp' );
+				assert.ok( closed );
+				assert.ok( stream.closed );
 			});
 		});
 	});
@@ -158,7 +176,7 @@ describe( 'gurgle', () => {
 
 				reject( new Error( 'something went wrong' ) );
 
-				return stream.done.then( () => {
+				return stream.done.catch( err => {
 					assert.equal( err.message, 'something went wrong' );
 				});
 			});

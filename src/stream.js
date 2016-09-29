@@ -8,7 +8,15 @@ export default function stream ( onclose = noop ) {
 	// `stream.done` resolves once the stream is closed.
 	// Handy for testing etc
 	let fulfil;
-	const done = new Promise( f => fulfil = f );
+	let reject;
+
+	let errored = false;
+	let error = null;
+
+	const done = new Promise( ( f, r ) => {
+		fulfil = f;
+		reject = r;
+	});
 
 	const s = {
 		__gurgle: true,
@@ -30,10 +38,14 @@ export default function stream ( onclose = noop ) {
 				enumerable: true
 			});
 
-			fulfil( s.value );
+			if ( errored ) {
+				reject( error );
+			} else {
+				fulfil( s.value );
+			}
 
 			subscribers.forEach( subscriber => {
-				subscriber.onclose();
+				if ( subscriber.onclose ) subscriber.onclose();
 			});
 
 			subscribers = null;
@@ -52,9 +64,18 @@ export default function stream ( onclose = noop ) {
 		},
 
 		error ( err ) {
+			let caught = false;
 			subscribers.forEach( subscriber => {
-				subscriber.onerror( err );
+				if ( subscriber.onerror ) {
+					caught = true;
+					subscriber.onerror( err );
+				}
 			});
+
+			error = err;
+			s.close();
+
+			if ( !caught ) throw err;
 		},
 
 		pipe ( fn, ...args ) {
@@ -74,7 +95,7 @@ export default function stream ( onclose = noop ) {
 			return s;
 		},
 
-		subscribe ( onvalue, onerror = noop, onclose = noop ) {
+		subscribe ( onvalue, onerror, onclose ) {
 			if ( s.closed ) throw new Error( 'Cannot subscribe to a closed stream' );
 
 			const callbacks = { onvalue, onerror, onclose };
