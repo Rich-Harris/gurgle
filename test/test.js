@@ -93,6 +93,55 @@ describe( 'gurgle', () => {
 
 				assert.equal( value, 42 );
 				assert.ok( !closed );
+
+				subscriber.cancel(); // second time should be a noop
+			});
+
+			it( 'immediately calls value handler with value, but only if stream has started', () => {
+				const stream1 = g.stream().push( 1 );
+				const stream2 = g.stream();
+
+				let called1 = false;
+				let called2 = false;
+
+				stream1.subscribe( () => called1 = true );
+				stream2.subscribe( () => called2 = true );
+
+				assert.ok( called1 );
+				assert.ok( !called2 );
+			});
+
+			it( 'calls error handler if stream is in error state', () => {
+				const stream = g.stream();
+
+				let called = false;
+				stream.subscribe(
+					() => {},
+					err => assert.equal( ( called = true, err.message ), 'oops' )
+				);
+
+				stream.error( new Error( 'oops' ) );
+				assert.ok( called );
+			});
+
+			it( 'calls value and close handler if stream has closed', () => {
+				const stream = g.stream().push( 42 );
+				stream.close();
+
+				let value;
+				let closed;
+
+				stream.subscribe(
+					v => {
+						assert.ok( !closed ); // value handler fired first
+						value = v;
+					},
+					() => {},
+					() => closed = true
+				);
+
+				assert.equal( value, 42 );
+				assert.ok( closed );
 			});
 		});
 
@@ -196,6 +245,18 @@ describe( 'gurgle', () => {
 				return promise.then( () => {
 					assert.equal( value, undefined );
 				});
+			});
+		});
+
+		describe( 'of', () => {
+			it( 'creates a stream with a single value', () => {
+				const stream = g.of( 42 );
+				assert.equal( stream.value, 42 );
+			});
+
+			it( 'closes immediately', () => {
+				const stream = g.of( 42 );
+				assert.ok( stream.closed );
 			});
 		});
 
@@ -308,6 +369,37 @@ describe( 'gurgle', () => {
 				dest.done.then( () => {
 					assert.deepEqual( results, [ 'c' ]);
 				});
+			});
+		});
+
+		describe( 'delay', () => {
+			it( 'delays events', () => {
+				const setTimeout = global.setTimeout;
+
+				let task;
+				let delay;
+				global.setTimeout = ( t, d ) => {
+					task = t;
+					delay = d;
+				};
+
+				const input = g.stream();
+				const output = g.delay( input, 250 );
+
+				input.push( 'x' );
+
+				assert.equal( delay, 250 );
+				assert.ok( !output.value );
+
+				task();
+				assert.equal( output.value, 'x' );
+
+				input.close();
+				assert.ok( !output.closed );
+				task();
+				assert.ok( output.closed );
+
+				global.setTimeout = setTimeout;
 			});
 		});
 
@@ -555,6 +647,42 @@ describe( 'gurgle', () => {
 			});
 		});
 
+		describe( 'skipCurrent', () => {
+			it( 'skips any existing value', () => {
+				const input = g.stream().push( 1 );
+				const output = g.skipCurrent( input );
+
+				assert.ok( !output.value );
+				input.push( 2 );
+				assert.equal( output.value, 2 );
+			});
+		});
+
+		describe( 'take', () => {
+			it( 'takes the specified number of values', () => {
+				const input = g.stream();
+				const output = g.take( input, 3 );
+
+				input.push( 1 ).push( 2 ).push( 3 ).push( 4 ).push( 5 );
+
+				assert.equal( output.value, 3 );
+				assert.ok( output.closed );
+			});
+		});
+
+		describe( 'tap', () => {
+			it( 'calls specified function on values', () => {
+				const input = g.stream();
+				const list = [];
+				const output = g.tap( input, value => list.push( value ) );
+
+				input.push( 1 ).push( 2 ).push( 3 );
+
+				assert.deepEqual( list, [ 1, 2, 3 ]);
+				assert.strictEqual( input, output );
+			});
+		});
+
 		describe( 'throttle', () => {
 			it( 'throttles a stream', () => {
 				const input = g.stream();
@@ -574,6 +702,25 @@ describe( 'gurgle', () => {
 				}, 20 );
 
 				return output.done;
+			});
+		});
+
+		describe( 'until', () => {
+			it( 'continues a stream until a signal ends it', () => {
+				const input = g.stream();
+				const signal = g.stream();
+				const output = g.until( input, signal );
+
+				const list = [];
+
+				output.subscribe( value => list.push( value ) );
+
+				input.push( 1 ).push( 2 ).push( 3 );
+				signal.push();
+				input.push( 4 ).push( 5 ).push( 6 );
+
+				assert.deepEqual( list, [ 1, 2, 3 ] );
+				assert.ok( output.closed );
 			});
 		});
 	});
