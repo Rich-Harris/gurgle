@@ -99,21 +99,26 @@ export default function stream ( onclose = noop ) {
 		},
 
 		subscribe ( onvalue, onerror, onclose ) {
-			if ( s.closed ) throw new Error( 'Cannot subscribe to a closed stream' );
-
 			const callbacks = { onvalue, onerror, onclose };
-			subscribers.push( callbacks );
 
-			if ( s.started ) onvalue( s.value );
+			if ( errored ) {
+				if ( onerror ) onerror( error );
+			} else {
+				if ( s.started ) onvalue( s.value );
 
-			let cancelled = false;
+				if ( s.closed ) {
+					if ( onclose ) onclose();
+				} else {
+					subscribers.push( callbacks );
+				}
+			}
 
 			return {
 				cancel () {
-					if ( !cancelled ) {
-						cancelled = true;
-						if ( !s.closed ) subscribers.splice( subscribers.indexOf( callbacks ), 1 );
-					}
+					console.log( `CANCEL`, onvalue )
+					if ( s.closed ) return;
+					const index = subscribers.indexOf( callbacks );
+					if ( ~index ) subscribers.splice( index, 1 );
 				}
 			};
 		}
