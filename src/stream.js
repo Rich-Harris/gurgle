@@ -115,7 +115,6 @@ export default function stream ( onclose = noop ) {
 
 			return {
 				cancel () {
-					console.log( `CANCEL`, onvalue )
 					if ( s.closed ) return;
 					const index = subscribers.indexOf( callbacks );
 					if ( ~index ) subscribers.splice( index, 1 );
