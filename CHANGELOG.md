@@ -1,5 +1,12 @@
 # gurgle changelog
 
+## 0.2.0
+
+* Streams close on error
+* Add `fromAjax` and `of` sources
+* Call callbacks with initial value, if stream has started
+* Various fixes
+
 ## 0.1.9
 
 * Fix build
